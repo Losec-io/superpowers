@@ -65,22 +65,40 @@ plan → dispatch → implement → 2 quick reviews → done
 
 ### Model Routing (Token Optimization)
 
-Opt-in per-task model tier routing. Create `docs/superpowers/model-routing.json`:
+Opt-in per-task model tier routing with platform-aware config. Create `docs/superpowers/model-routing.json`:
 
 ```json
-{"mechanical": "inherit", "standard": "inherit", "frontier": "inherit"}
+{
+  "claude": {"mechanical": "inherit", "standard": "inherit", "frontier": "inherit"},
+  "codex": {"mechanical": "inherit", "standard": "inherit", "frontier": "inherit"}
+}
 ```
 
 - **mechanical** — simple tasks (1-2 files, clear spec)
 - **standard** — integration tasks (multi-file coordination)
 - **frontier** — architecture/design judgment
 
-All default to `inherit` (session model). For Claude Code, customize to save tokens:
+All default to `inherit` (session model). Customize per platform to save tokens:
 ```json
-{"mechanical": "sonnet", "standard": "sonnet", "frontier": "inherit"}
+{
+  "claude": {"mechanical": "sonnet", "standard": "inherit", "frontier": "inherit"},
+  "codex": {"mechanical": "gpt-5.6-luna", "standard": "gpt-5.6-terra", "frontier": "inherit"}
+}
 ```
 
-Tasks are tagged with `modelTier` during plan writing. A `PreToolUse` hook enforces the correct model on every Agent dispatch. Disable with `SUPERPOWERS_ROUTING_GUARD=0`.
+Tasks are tagged with `modelTier` during plan writing. A `PreToolUse` hook (Claude Code) and `SubagentStart` hook (Codex) enforce the correct model on every subagent dispatch. Disable with `SUPERPOWERS_ROUTING_GUARD=0`.
+
+### Codex Native Agents
+
+Custom agent TOML definitions in `agents/` for Codex's native subagent system:
+
+| Agent | Role | Sandbox |
+|-------|------|---------|
+| `implementer` | Single-task TDD implementation with self-review | `workspace-write` |
+| `spec-reviewer` | Skeptical spec compliance verification | `read-only` |
+| `code-quality-reviewer` | Code quality, tests, architecture review | `read-only` |
+
+Use with `spawn_agent(agent_type="implementer", ...)` in Codex CLI/App. The `SubagentStart` hook enforces model routing automatically.
 
 ### Cross-Session Messaging
 

@@ -6,7 +6,7 @@ Use this template when dispatching a spec compliance reviewer subagent.
 
 ```
 Dispatch subagent:
-  Claude Code: Task tool (general-purpose) | Codex: spawn_agent
+  Claude Code: Task tool (general-purpose) | Codex: spawn_agent(agent_type="spec-reviewer")
   description: "Review spec compliance for Task N"
   prompt: |
     You are reviewing whether an implementation matches its specification.

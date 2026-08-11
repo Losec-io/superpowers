@@ -90,18 +90,29 @@ digraph process {
 
 If `docs/superpowers/model-routing.json` exists, read it and dispatch subagents with the mapped model. Each task's `json:metadata` fence contains a `modelTier` field. Look up the tier in the routing config to get the model string. Pass it as the `model` parameter on every Agent dispatch.
 
-**Default routing:**
+The routing config supports platform-aware format:
+```json
+{
+  "claude": {"mechanical": "sonnet", "standard": "inherit", "frontier": "inherit"},
+  "codex": {"mechanical": "gpt-5.6-luna", "standard": "gpt-5.6-terra", "frontier": "inherit"}
+}
+```
+
+Or legacy flat format (applies to all platforms):
 ```json
 {"mechanical": "inherit", "standard": "inherit", "frontier": "inherit"}
 ```
 
-- **mechanical** (isolated functions, clear specs, 1-2 files) → session model
-- **standard** (multi-file coordination, integration) → session model
+**Tiers:**
+- **mechanical** (isolated functions, clear specs, 1-2 files) → cheap model
+- **standard** (multi-file coordination, integration) → standard model
 - **frontier** (architecture, design judgment) → session model
 
-Customize tiers to specific models when needed (e.g., `"mechanical": "sonnet"` for Claude Code).
-
 **Reviewers** always use the `standard` tier model.
+
+**Platform-specific dispatch:**
+- **Claude Code:** `Task` tool with `model` parameter
+- **Codex:** `spawn_agent` with custom agent types (`implementer`, `spec-reviewer`, `code-quality-reviewer` from `agents/` directory)
 
 If no routing file exists, use the least powerful model that can handle each role:
 - Touches 1-2 files with a complete spec → cheap model

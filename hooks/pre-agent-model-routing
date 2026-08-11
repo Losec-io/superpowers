@@ -1,12 +1,19 @@
 #!/usr/bin/env bash
-# PreToolUse hook on Agent: enforce per-task model-tier routing.
+# PreToolUse hook on Agent / SubagentStart: enforce per-task model-tier routing.
 #
 # Opt-in: only active when docs/superpowers/model-routing.json exists.
 # Fail-open: unparseable config or missing data → allow.
 # Escape hatch: SUPERPOWERS_ROUTING_GUARD=0
 #
-# model-routing.json maps tier names to model strings:
+# model-routing.json supports two formats:
+#
+# Platform-aware (recommended):
+#   {"claude":{"mechanical":"sonnet","standard":"inherit","frontier":"inherit"},
+#    "codex":{"mechanical":"gpt-5.6-luna","standard":"inherit","frontier":"inherit"}}
+#
+# Legacy flat (still supported):
 #   {"mechanical":"sonnet","standard":"sonnet","frontier":"inherit"}
+#
 # "inherit" = any model acceptable.
 
 set -euo pipefail
@@ -23,11 +30,11 @@ INPUT=$(cat)
 FIELDS=$(echo "$INPUT" | jq -r '[(.tool_name // ""), (.tool_input.model // ""), (.tool_input.subagent_type // ""), (.cwd // ""), (.transcript_path // "")] | map(tostring) | .[]' 2>/dev/null | tr -d '\r') || { echo "$ALLOW"; exit 0; }
 { IFS= read -r TOOL_NAME; IFS= read -r AGENT_MODEL; IFS= read -r AGENT_TYPE; IFS= read -r CWD; IFS= read -r TRANSCRIPT_PATH; } <<< "$FIELDS" || true
 
-# Only intercept Agent calls
-[[ "$TOOL_NAME" != "Agent" ]] && { echo "$ALLOW"; exit 0; }
+# Only intercept Agent calls (Claude Code) and SubagentStart (Codex)
+[[ "$TOOL_NAME" != "Agent" && "$TOOL_NAME" != "SubagentStart" ]] && { echo "$ALLOW"; exit 0; }
 
 # Custom agent types with explicit model keep their own cost profiles
-[[ -n "$AGENT_TYPE" && "$AGENT_TYPE" != "general-purpose" && -n "$AGENT_MODEL" ]] && { echo "$ALLOW"; exit 0; }
+[[ -n "$AGENT_TYPE" && "$AGENT_TYPE" != "general-purpose" && "$AGENT_TYPE" != "worker" && "$AGENT_TYPE" != "default" && -n "$AGENT_MODEL" ]] && { echo "$ALLOW"; exit 0; }
 
 # Locate routing file
 [[ -z "$CWD" ]] && CWD="$PWD"
@@ -35,9 +42,34 @@ ROUTING_FILE="$CWD/docs/superpowers/model-routing.json"
 if [[ ! -f "$ROUTING_FILE" ]]; then
     ROUTING_FILE="$HOME/.claude/superpowers/model-routing.json"
 fi
+if [[ ! -f "$ROUTING_FILE" ]]; then
+    ROUTING_FILE="$HOME/.codex/superpowers/model-routing.json"
+fi
 [[ ! -f "$ROUTING_FILE" ]] && { echo "$ALLOW"; exit 0; }
 
 ROUTING_JSON=$(jq '.' "$ROUTING_FILE" 2>/dev/null) || { echo "$ALLOW"; exit 0; }
+
+# Detect platform and extract platform-specific routing
+# Platform-aware format has "claude" or "codex" top-level keys
+# Legacy flat format has "mechanical"/"standard"/"frontier" directly
+PLATFORM=""
+if [[ -n "${CODEX_HOME:-}" || -n "${CODEX_CI:-}" || -n "${CODEX_SANDBOX_DIR:-}" ]]; then
+    PLATFORM="codex"
+elif [[ -n "${CLAUDE_PLUGIN_ROOT:-}" || -n "${CLAUDE_CODE_ENTRYPOINT:-}" ]]; then
+    PLATFORM="claude"
+fi
+
+HAS_PLATFORM_KEY=$(echo "$ROUTING_JSON" | jq -r 'has("claude") or has("codex")' 2>/dev/null | tr -d '\r') || HAS_PLATFORM_KEY="false"
+
+if [[ "$HAS_PLATFORM_KEY" == "true" ]]; then
+    if [[ -n "$PLATFORM" ]]; then
+        PLATFORM_ROUTING=$(echo "$ROUTING_JSON" | jq --arg p "$PLATFORM" '.[$p] // {}' 2>/dev/null) || PLATFORM_ROUTING="{}"
+    else
+        PLATFORM_ROUTING=$(echo "$ROUTING_JSON" | jq '.claude // {}' 2>/dev/null) || PLATFORM_ROUTING="{}"
+    fi
+else
+    PLATFORM_ROUTING="$ROUTING_JSON"
+fi
 
 # No transcript → can't determine task tier
 [[ -z "$TRANSCRIPT_PATH" || ! -f "$TRANSCRIPT_PATH" ]] && { echo "$ALLOW"; exit 0; }
@@ -124,7 +156,7 @@ ALLOWED=()
 IFS=',' read -r -a TIER_ARR <<< "$TIERS_CSV"
 for tier in ${TIER_ARR[@]+"${TIER_ARR[@]}"}; do
     [[ -z "$tier" ]] && continue
-    R=$(echo "$ROUTING_JSON" | jq -r --arg t "$tier" '.[$t] // empty' 2>/dev/null | tr -d '\r') || true
+    R=$(echo "$PLATFORM_ROUTING" | jq -r --arg t "$tier" '.[$t] // empty' 2>/dev/null | tr -d '\r') || true
     [[ -z "$R" ]] && continue
     [[ "$R" == "inherit" ]] && { echo "$ALLOW"; exit 0; }
     DUP=""
@@ -135,7 +167,7 @@ done
 [[ ${#ALLOWED[@]} -eq 0 ]] && { echo "$ALLOW"; exit 0; }
 
 # Add standard tier for reviewers
-STD=$(echo "$ROUTING_JSON" | jq -r '.standard // empty' 2>/dev/null | tr -d '\r') || true
+STD=$(echo "$PLATFORM_ROUTING" | jq -r '.standard // empty' 2>/dev/null | tr -d '\r') || true
 [[ "$STD" == "inherit" ]] && { echo "$ALLOW"; exit 0; }
 if [[ -n "$STD" ]]; then
     DUP=""
@@ -155,6 +187,7 @@ fi
     echo "AGENT DISPATCH DOES NOT MATCH TASK MODEL TIER"
     echo ""
     echo "Task #$TASK_ID ('$SUBJECT') has tier(s): $TIERS_CSV"
+    echo "Platform: ${PLATFORM:-unknown}"
     echo "Allowed models: ${ALLOWED[*]}"
     echo "Your dispatch model: ${AGENT_MODEL:-(none)}"
     echo ""

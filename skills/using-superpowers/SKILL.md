@@ -31,13 +31,11 @@ If CLAUDE.md or AGENTS.md says "don't use TDD" and a skill says "always use TDD,
 
 **In Codex:** Skills load natively from the plugin. Use `references/codex-tools.md` for tool name mapping (e.g., `Task` → `spawn_agent`, `TodoWrite` → `update_plan`).
 
-**In Copilot CLI:** Use the `skill` tool. Skills are auto-discovered from installed plugins. The `skill` tool works the same as Claude Code's `Skill` tool.
-
 **In other environments:** Check your platform's documentation for how skills are loaded.
 
 ## Platform Adaptation
 
-Skills use Claude Code tool names. Non-CC platforms: see `references/codex-tools.md` (Codex), `references/copilot-tools.md` (Copilot CLI) for tool equivalents.
+Skills use Claude Code tool names. Codex users: see `references/codex-tools.md` for tool equivalents, custom agent types (`implementer`, `spec-reviewer`, `code-quality-reviewer`), model routing, and reasoning effort mapping.
 
 # Using Skills
 

@@ -1,5 +1,12 @@
 {
-  "mechanical": "inherit",
-  "standard": "inherit",
-  "frontier": "inherit"
+  "claude": {
+    "mechanical": "inherit",
+    "standard": "inherit",
+    "frontier": "inherit"
+  },
+  "codex": {
+    "mechanical": "inherit",
+    "standard": "inherit",
+    "frontier": "inherit"
+  }
 }
