@@ -1,0 +1,169 @@
+#!/usr/bin/env bash
+# PreToolUse hook on Agent: enforce per-task model-tier routing.
+#
+# Opt-in: only active when docs/superpowers/model-routing.json exists.
+# Fail-open: unparseable config or missing data → allow.
+# Escape hatch: SUPERPOWERS_ROUTING_GUARD=0
+#
+# model-routing.json maps tier names to model strings:
+#   {"mechanical":"sonnet","standard":"sonnet","frontier":"inherit"}
+# "inherit" = any model acceptable.
+
+set -euo pipefail
+
+ALLOW='{"hookSpecificOutput": {"hookEventName": "PreToolUse", "permissionDecision": "allow"}}'
+
+# Guard disabled
+[[ "${SUPERPOWERS_ROUTING_GUARD:-1}" == "0" ]] && { echo "$ALLOW"; exit 0; }
+
+trap 'echo "$ALLOW"; exit 0' ERR
+
+INPUT=$(cat)
+
+FIELDS=$(echo "$INPUT" | jq -r '[(.tool_name // ""), (.tool_input.model // ""), (.tool_input.subagent_type // ""), (.cwd // ""), (.transcript_path // "")] | map(tostring) | .[]' 2>/dev/null | tr -d '\r') || { echo "$ALLOW"; exit 0; }
+{ IFS= read -r TOOL_NAME; IFS= read -r AGENT_MODEL; IFS= read -r AGENT_TYPE; IFS= read -r CWD; IFS= read -r TRANSCRIPT_PATH; } <<< "$FIELDS" || true
+
+# Only intercept Agent calls
+[[ "$TOOL_NAME" != "Agent" ]] && { echo "$ALLOW"; exit 0; }
+
+# Custom agent types with explicit model keep their own cost profiles
+[[ -n "$AGENT_TYPE" && "$AGENT_TYPE" != "general-purpose" && -n "$AGENT_MODEL" ]] && { echo "$ALLOW"; exit 0; }
+
+# Locate routing file
+[[ -z "$CWD" ]] && CWD="$PWD"
+ROUTING_FILE="$CWD/docs/superpowers/model-routing.json"
+if [[ ! -f "$ROUTING_FILE" ]]; then
+    ROUTING_FILE="$HOME/.claude/superpowers/model-routing.json"
+fi
+[[ ! -f "$ROUTING_FILE" ]] && { echo "$ALLOW"; exit 0; }
+
+ROUTING_JSON=$(jq '.' "$ROUTING_FILE" 2>/dev/null) || { echo "$ALLOW"; exit 0; }
+
+# No transcript → can't determine task tier
+[[ -z "$TRANSCRIPT_PATH" || ! -f "$TRANSCRIPT_PATH" ]] && { echo "$ALLOW"; exit 0; }
+
+# Scan transcript for in-progress tasks and their modelTier
+PY_SCAN='
+import json, re, sys
+
+path = sys.argv[1]
+tasks = {}
+inprogress = []
+create_count = 0
+
+try:
+    f = open(path, "rb")
+except Exception:
+    print("?\n\n"); sys.exit(0)
+
+with f:
+    for line in f:
+        if b"TaskCreate" not in line and b"TaskUpdate" not in line:
+            continue
+        try:
+            e = json.loads(line)
+        except Exception:
+            continue
+        for c in (e.get("message") or {}).get("content") or []:
+            if not isinstance(c, dict):
+                continue
+            inp = c.get("input") or {}
+            if c.get("type") == "tool_use" and c.get("name") == "TaskCreate":
+                create_count += 1
+                tasks[str(create_count)] = {
+                    "subject": inp.get("subject", ""),
+                    "description": inp.get("description", ""),
+                }
+            elif c.get("type") == "tool_use" and c.get("name") == "TaskUpdate":
+                tid = str(inp.get("taskId", ""))
+                if not tid:
+                    continue
+                if inp.get("description"):
+                    tasks.setdefault(tid, {"subject": "", "description": ""})["description"] = inp["description"]
+                status = inp.get("status")
+                if status == "in_progress":
+                    if tid not in inprogress:
+                        inprogress.append(tid)
+                elif status in ("completed", "cancelled", "deleted"):
+                    if tid in inprogress:
+                        inprogress.remove(tid)
+
+def get_tier(desc):
+    m = re.search(r"```json:metadata\s*\n(.*?)\n```", desc, re.DOTALL)
+    if not m:
+        return ""
+    try:
+        meta = json.loads(m.group(1))
+        return meta.get("modelTier", "")
+    except Exception:
+        return ""
+
+most_recent = inprogress[-1] if inprogress else None
+subject = tasks.get(most_recent, {}).get("subject", "") if most_recent else ""
+
+tiers = []
+for tid in inprogress:
+    tier = get_tier(tasks.get(tid, {}).get("description", ""))
+    if tier and tier not in tiers:
+        tiers.append(tier)
+
+print(most_recent or "?")
+print(subject.replace("\n", " "))
+print(",".join(tiers))
+'
+
+RESULT=$(python3 -c "$PY_SCAN" "$TRANSCRIPT_PATH" 2>/dev/null | tr -d '\r') || RESULT=$'?\n\n'
+{ IFS= read -r TASK_ID; IFS= read -r SUBJECT; IFS= read -r TIERS_CSV; } <<< "$RESULT" || true
+TASK_ID="${TASK_ID:-?}"
+
+# No tier info → allow
+[[ -z "$TIERS_CSV" ]] && { echo "$ALLOW"; exit 0; }
+
+# Build allowed model set from all in-progress task tiers + "standard" (reviewers)
+ALLOWED=()
+IFS=',' read -r -a TIER_ARR <<< "$TIERS_CSV"
+for tier in ${TIER_ARR[@]+"${TIER_ARR[@]}"}; do
+    [[ -z "$tier" ]] && continue
+    R=$(echo "$ROUTING_JSON" | jq -r --arg t "$tier" '.[$t] // empty' 2>/dev/null | tr -d '\r') || true
+    [[ -z "$R" ]] && continue
+    [[ "$R" == "inherit" ]] && { echo "$ALLOW"; exit 0; }
+    DUP=""
+    for m in ${ALLOWED[@]+"${ALLOWED[@]}"}; do [[ "$m" == "$R" ]] && DUP=1; done
+    [[ -z "$DUP" ]] && ALLOWED+=("$R")
+done
+
+[[ ${#ALLOWED[@]} -eq 0 ]] && { echo "$ALLOW"; exit 0; }
+
+# Add standard tier for reviewers
+STD=$(echo "$ROUTING_JSON" | jq -r '.standard // empty' 2>/dev/null | tr -d '\r') || true
+[[ "$STD" == "inherit" ]] && { echo "$ALLOW"; exit 0; }
+if [[ -n "$STD" ]]; then
+    DUP=""
+    for m in "${ALLOWED[@]}"; do [[ "$m" == "$STD" ]] && DUP=1; done
+    [[ -z "$DUP" ]] && ALLOWED+=("$STD")
+fi
+
+# Check dispatch model against allowed set
+if [[ -n "$AGENT_MODEL" ]]; then
+    for m in "${ALLOWED[@]}"; do
+        [[ "$AGENT_MODEL" == "$m" ]] && { echo "$ALLOW"; exit 0; }
+    done
+fi
+
+# Block: model mismatch
+{
+    echo "AGENT DISPATCH DOES NOT MATCH TASK MODEL TIER"
+    echo ""
+    echo "Task #$TASK_ID ('$SUBJECT') has tier(s): $TIERS_CSV"
+    echo "Allowed models: ${ALLOWED[*]}"
+    echo "Your dispatch model: ${AGENT_MODEL:-(none)}"
+    echo ""
+    echo "Options:"
+    echo "  1. Re-issue Agent call with model matching: ${ALLOWED[*]}"
+    echo "  2. Update task metadata if tier is wrong"
+    echo "  3. Escalate to user via AskUserQuestion"
+    echo ""
+    echo "(Disable: SUPERPOWERS_ROUTING_GUARD=0)"
+} >&2
+
+exit 2

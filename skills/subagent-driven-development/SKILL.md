@@ -88,18 +88,25 @@ digraph process {
 
 ## Model Selection
 
-Use the least powerful model that can handle each role to conserve cost and increase speed.
+If `docs/superpowers/model-routing.json` exists, read it and dispatch subagents with the mapped model. Each task's `json:metadata` fence contains a `modelTier` field. Look up the tier in the routing config to get the model string. Pass it as the `model` parameter on every Agent dispatch.
 
-**Mechanical implementation tasks** (isolated functions, clear specs, 1-2 files): use a fast, cheap model. Most implementation tasks are mechanical when the plan is well-specified.
+**Default routing:**
+```json
+{"mechanical": "sonnet", "standard": "sonnet", "frontier": "inherit"}
+```
 
-**Integration and judgment tasks** (multi-file coordination, pattern matching, debugging): use a standard model.
+- **mechanical** (isolated functions, clear specs, 1-2 files) → sonnet
+- **standard** (multi-file coordination, integration) → sonnet
+- **frontier** (architecture, design judgment) → session model (inherit)
 
-**Architecture, design, and review tasks**: use the most capable available model.
+**Reviewers** always use the `standard` tier model.
 
-**Task complexity signals:**
+If no routing file exists, use the least powerful model that can handle each role:
 - Touches 1-2 files with a complete spec → cheap model
 - Touches multiple files with integration concerns → standard model
 - Requires design judgment or broad codebase understanding → most capable model
+
+**When to escalate tier:** If an implementer returns BLOCKED or the task proves harder than expected, re-dispatch with the next tier up (mechanical → standard → frontier).
 
 ## Handling Implementer Status
 

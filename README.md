@@ -43,7 +43,7 @@ The Superpowers marketplace provides Superpowers and some other related plugins 
 - Register the marketplace:
 
   ```bash
-  /plugin marketplace add hypnguyen1209/superpowers-marketplace
+  /plugin marketplace add Losec-io/superpowers-marketplace
   ```
 
 - Install the plugin from this marketplace:
@@ -83,7 +83,7 @@ Superpowers is available via the [official Codex plugin marketplace](https://git
 - Register the marketplace:
 
   ```bash
-  droid plugin marketplace add https://github.com/hypnguyen1209/superpowers
+  droid plugin marketplace add https://github.com/Losec-io/superpowers
   ```
 
 - Install the plugin:
@@ -97,7 +97,7 @@ Superpowers is available via the [official Codex plugin marketplace](https://git
 - Install the extension:
 
   ```bash
-  gemini extensions install https://github.com/hypnguyen1209/superpowers
+  gemini extensions install https://github.com/Losec-io/superpowers
   ```
 
 - Update later:
@@ -114,7 +114,7 @@ already use it in another harness.
 - Tell OpenCode:
 
   ```
-  Fetch and follow instructions from https://raw.githubusercontent.com/hypnguyen1209/superpowers/refs/heads/main/.opencode/INSTALL.md
+  Fetch and follow instructions from https://raw.githubusercontent.com/Losec-io/superpowers/refs/heads/main/.opencode/INSTALL.md
   ```
 
 - Detailed docs: [docs/README.opencode.md](docs/README.opencode.md)
@@ -134,7 +134,7 @@ already use it in another harness.
 - Register the marketplace:
 
   ```bash
-  copilot plugin marketplace add hypnguyen1209/superpowers-marketplace
+  copilot plugin marketplace add Losec-io/superpowers-marketplace
   ```
 
 - Install the plugin:
@@ -187,6 +187,20 @@ already use it in another harness.
 - **writing-skills** - Create new skills following best practices (includes testing methodology)
 - **using-superpowers** - Introduction to the skills system
 
+## Model Routing (Token Optimization)
+
+Opt-in per-task model tier routing to reduce token costs. Create `docs/superpowers/model-routing.json`:
+
+```json
+{"mechanical": "sonnet", "standard": "sonnet", "frontier": "inherit"}
+```
+
+- **mechanical** — simple tasks (1-2 files, clear spec) → sonnet
+- **standard** — integration tasks → sonnet
+- **frontier** — architecture/design → session model (inherit)
+
+Tasks are tagged with `modelTier` during plan writing. A `PreToolUse` hook enforces the correct model on every Agent dispatch. Disable with `SUPERPOWERS_ROUTING_GUARD=0`.
+
 ## Philosophy
 
 - **Test-Driven Development** - Write tests first, always
@@ -218,4 +232,4 @@ MIT License - see LICENSE file for details
 
 ## Community
 
-- **Issues**: https://github.com/hypnguyen1209/superpowers/issues
+- **Issues**: https://github.com/Losec-io/superpowers/issues

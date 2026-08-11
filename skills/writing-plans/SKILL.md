@@ -60,6 +60,20 @@ This structure informs the task decomposition. Each task should produce self-con
 ---
 ```
 
+## Model Tier
+
+If `docs/superpowers/model-routing.json` exists, tag each task with a `modelTier` in a `json:metadata` fence inside the task description. This controls which model handles the task:
+
+- **mechanical** — isolated functions, clear specs, 1-2 files
+- **standard** — multi-file coordination, integration concerns
+- **frontier** — architecture, design judgment, broad codebase understanding
+
+````markdown
+```json:metadata
+{"modelTier": "mechanical"}
+```
+````
+
 ## Task Structure
 
 ````markdown

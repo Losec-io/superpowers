@@ -4,6 +4,7 @@ Use this template when dispatching an implementer subagent.
 
 ```
 Task tool (general-purpose):
+  model: [resolved from modelTier via model-routing.json, or omit if no routing]
   description: "Implement Task N: [task name]"
   prompt: |
     You are implementing Task N: [task name]
