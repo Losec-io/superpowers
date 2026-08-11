@@ -92,12 +92,14 @@ If `docs/superpowers/model-routing.json` exists, read it and dispatch subagents 
 
 **Default routing:**
 ```json
-{"mechanical": "sonnet", "standard": "sonnet", "frontier": "inherit"}
+{"mechanical": "inherit", "standard": "inherit", "frontier": "inherit"}
 ```
 
-- **mechanical** (isolated functions, clear specs, 1-2 files) → sonnet
-- **standard** (multi-file coordination, integration) → sonnet
-- **frontier** (architecture, design judgment) → session model (inherit)
+- **mechanical** (isolated functions, clear specs, 1-2 files) → session model
+- **standard** (multi-file coordination, integration) → session model
+- **frontier** (architecture, design judgment) → session model
+
+Customize tiers to specific models when needed (e.g., `"mechanical": "sonnet"` for Claude Code).
 
 **Reviewers** always use the `standard` tier model.
 

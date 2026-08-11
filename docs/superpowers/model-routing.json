@@ -1,5 +1,5 @@
 {
-  "mechanical": "sonnet",
-  "standard": "sonnet",
+  "mechanical": "inherit",
+  "standard": "inherit",
   "frontier": "inherit"
 }

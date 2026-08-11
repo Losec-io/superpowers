@@ -192,12 +192,14 @@ already use it in another harness.
 Opt-in per-task model tier routing to reduce token costs. Create `docs/superpowers/model-routing.json`:
 
 ```json
-{"mechanical": "sonnet", "standard": "sonnet", "frontier": "inherit"}
+{"mechanical": "inherit", "standard": "inherit", "frontier": "inherit"}
 ```
 
-- **mechanical** — simple tasks (1-2 files, clear spec) → sonnet
-- **standard** — integration tasks → sonnet
-- **frontier** — architecture/design → session model (inherit)
+- **mechanical** — simple tasks (1-2 files, clear spec)
+- **standard** — integration tasks
+- **frontier** — architecture/design
+
+All default to `inherit` (session model). Customize per tier when needed (e.g., `"mechanical": "sonnet"` for Claude Code).
 
 Tasks are tagged with `modelTier` during plan writing. A `PreToolUse` hook enforces the correct model on every Agent dispatch. Disable with `SUPERPOWERS_ROUTING_GUARD=0`.
 
