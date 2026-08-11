@@ -33,7 +33,7 @@ Other platforms (Gemini CLI, Cursor, Copilot CLI, etc.) are not maintained in th
 ### Claude Code
 
 ```bash
-/plugin add https://github.com/Losec-io/superpowers.git
+/plugin marketplace add https://github.com/Losec-io/superpowers.git
 ```
 
 ### Codex CLI
