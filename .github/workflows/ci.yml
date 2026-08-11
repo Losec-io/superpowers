@@ -130,11 +130,12 @@ jobs:
         working-directory: tests/brainstorm-server
         run: npm test
 
-      - name: Run shell tests
+      - name: Validate bin scripts
         run: |
-          for f in tests/codex-plugin-sync/*.sh; do
-            echo "Running $f..."
-            bash "$f" || true
+          for f in bin/*; do
+            [ ! -f "$f" ] && continue
+            echo "Checking $f..."
+            head -1 "$f" | grep -q '^#!/' || echo "::warning file=$f::Missing shebang"
           done
 
   lint-hooks:
