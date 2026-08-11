@@ -1,6 +1,10 @@
 ---
 name: subagent-driven-development
 description: Use when executing implementation plans with independent tasks in the current session
+context: fork
+model: inherit
+effort: high
+allowed-tools: Agent, Bash, Read, Grep, Glob, Edit, Write
 ---
 
 # Subagent-Driven Development
@@ -88,7 +92,11 @@ digraph process {
 
 ## Model Selection
 
-If `docs/superpowers/model-routing.json` exists, read it and dispatch subagents with the mapped model. Each task's `json:metadata` fence contains a `modelTier` field. Look up the tier in the routing config to get the model string. Pass it as the `model` parameter on every Agent dispatch.
+Current routing config (injected at skill load time):
+
+!`cat docs/superpowers/model-routing.json 2>/dev/null || echo '{"claude":{"mechanical":"inherit","standard":"inherit","frontier":"inherit"},"codex":{"mechanical":"inherit","standard":"inherit","frontier":"inherit"}}'`
+
+Each task's `json:metadata` fence contains a `modelTier` field. Look up the tier in the routing config to get the model string. Pass it as the `model` parameter on every Agent dispatch.
 
 The routing config supports platform-aware format:
 ```json

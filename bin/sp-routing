@@ -1,0 +1,73 @@
+#!/usr/bin/env bash
+# sp-routing — Display or validate model routing configuration
+#
+# Usage:
+#   sp-routing              Show current routing config
+#   sp-routing validate     Validate routing config structure
+#   sp-routing tier <name>  Show model for a specific tier
+
+set -euo pipefail
+
+ROUTING_FILE="${1:-}"
+
+find_routing() {
+    local paths=(
+        "./docs/superpowers/model-routing.json"
+        "$HOME/.claude/superpowers/model-routing.json"
+        "$HOME/.codex/superpowers/model-routing.json"
+    )
+    for p in "${paths[@]}"; do
+        if [[ -f "$p" ]]; then
+            echo "$p"
+            return 0
+        fi
+    done
+    return 1
+}
+
+case "${1:-show}" in
+    show)
+        FILE=$(find_routing) || { echo "No model-routing.json found"; exit 1; }
+        echo "Routing config: $FILE"
+        echo "---"
+        jq '.' "$FILE"
+        ;;
+    validate)
+        FILE=$(find_routing) || { echo "No model-routing.json found"; exit 1; }
+        if jq -e '
+            (has("claude") or has("codex") or has("mechanical")) and
+            (if has("claude") then .claude | has("mechanical") and has("standard") and has("frontier") else true end) and
+            (if has("codex") then .codex | has("mechanical") and has("standard") and has("frontier") else true end) and
+            (if has("mechanical") then has("standard") and has("frontier") else true end)
+        ' "$FILE" > /dev/null 2>&1; then
+            echo "Valid routing config: $FILE"
+        else
+            echo "Invalid routing config: $FILE" >&2
+            echo "Expected format: {\"claude\":{\"mechanical\":\"...\",\"standard\":\"...\",\"frontier\":\"...\"},\"codex\":{...}}" >&2
+            exit 1
+        fi
+        ;;
+    tier)
+        TIER="${2:-}"
+        [[ -z "$TIER" ]] && { echo "Usage: sp-routing tier <mechanical|standard|frontier>"; exit 1; }
+        FILE=$(find_routing) || { echo "No model-routing.json found"; exit 1; }
+
+        PLATFORM=""
+        if [[ -n "${CODEX_HOME:-}" || -n "${CODEX_CI:-}" ]]; then
+            PLATFORM="codex"
+        elif [[ -n "${CLAUDE_PLUGIN_ROOT:-}" ]]; then
+            PLATFORM="claude"
+        fi
+
+        HAS_PLATFORM=$(jq -r 'has("claude") or has("codex")' "$FILE" 2>/dev/null) || HAS_PLATFORM="false"
+        if [[ "$HAS_PLATFORM" == "true" && -n "$PLATFORM" ]]; then
+            jq -r --arg p "$PLATFORM" --arg t "$TIER" '.[$p][$t] // "inherit"' "$FILE"
+        else
+            jq -r --arg t "$TIER" '.[$t] // "inherit"' "$FILE"
+        fi
+        ;;
+    *)
+        echo "Usage: sp-routing [show|validate|tier <name>]"
+        exit 1
+        ;;
+esac

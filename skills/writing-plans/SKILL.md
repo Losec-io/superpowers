@@ -1,6 +1,11 @@
 ---
 name: writing-plans
 description: Use when you have a spec or requirements for a multi-step task, before touching code
+context: fork
+model: inherit
+effort: high
+allowed-tools: Read, Write, Grep, Glob
+paths: docs/superpowers/plans/**
 ---
 
 # Writing Plans

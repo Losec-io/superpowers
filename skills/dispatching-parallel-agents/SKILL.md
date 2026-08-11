@@ -1,6 +1,10 @@
 ---
 name: dispatching-parallel-agents
 description: Use when facing 2+ independent tasks that can be worked on without shared state or sequential dependencies
+context: fork
+model: inherit
+effort: high
+allowed-tools: Agent, Bash, Read, Grep, Glob
 ---
 
 # Dispatching Parallel Agents

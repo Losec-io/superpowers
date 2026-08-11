@@ -1,0 +1,40 @@
+#!/usr/bin/env bash
+# sp-worktree — Quick worktree creation and cleanup
+#
+# Usage:
+#   sp-worktree create <branch-name>   Create worktree for feature branch
+#   sp-worktree list                   List active worktrees
+#   sp-worktree clean                  Remove merged worktrees
+
+set -euo pipefail
+
+case "${1:-list}" in
+    create)
+        BRANCH="${2:-}"
+        [[ -z "$BRANCH" ]] && { echo "Usage: sp-worktree create <branch-name>"; exit 1; }
+        WORKTREE_DIR="../$(basename "$(pwd)")-${BRANCH}"
+        git worktree add "$WORKTREE_DIR" -b "$BRANCH" 2>/dev/null || \
+            git worktree add "$WORKTREE_DIR" "$BRANCH"
+        echo "Worktree created at: $(cd "$WORKTREE_DIR" && pwd)"
+        ;;
+    list)
+        git worktree list
+        ;;
+    clean)
+        MAIN=$(git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's@^refs/remotes/origin/@@' || echo "main")
+        git worktree list --porcelain | grep '^worktree ' | cut -d' ' -f2- | while read -r wt; do
+            [[ "$wt" == "$(git rev-parse --show-toplevel)" ]] && continue
+            BRANCH=$(git -C "$wt" branch --show-current 2>/dev/null) || continue
+            if git branch --merged "$MAIN" 2>/dev/null | grep -q "^\s*${BRANCH}$"; then
+                echo "Removing merged worktree: $wt ($BRANCH)"
+                git worktree remove "$wt" 2>/dev/null || echo "  Failed — may have changes"
+            fi
+        done
+        git worktree prune
+        echo "Done"
+        ;;
+    *)
+        echo "Usage: sp-worktree [create <branch>|list|clean]"
+        exit 1
+        ;;
+esac

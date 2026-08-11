@@ -1,7 +1,7 @@
 {
   "name": "superpowers",
   "description": "Agentic skills framework: planning, TDD, debugging, model routing, and collaboration workflows for Claude Code and Codex",
-  "version": "5.1.2",
+  "version": "5.1.3",
   "author": {
     "name": "Losec-io",
     "url": "https://github.com/Losec-io"
@@ -9,6 +9,9 @@
   "homepage": "https://github.com/Losec-io/superpowers",
   "repository": "https://github.com/Losec-io/superpowers",
   "license": "MIT",
+  "hooks": "./hooks/hooks.json",
+  "settings": "./settings.json",
+  "bin": "./bin",
   "keywords": [
     "skills",
     "tdd",

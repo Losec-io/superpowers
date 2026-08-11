@@ -1,6 +1,9 @@
 ---
 name: executing-plans
 description: Use when you have a written implementation plan to execute in a separate session with review checkpoints
+context: fork
+effort: high
+allowed-tools: Agent, Bash, Read, Write, Edit, Grep, Glob
 ---
 
 # Executing Plans

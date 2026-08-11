@@ -24,18 +24,57 @@ Before any task, check if a skill applies. Use the `superpowers:using-superpower
 | `requesting-code-review` | Pre-review checklist |
 | `using-git-worktrees` | Parallel development branches |
 | `finishing-a-development-branch` | Merge/PR decision workflow |
+| `large-codebase-support` | Monorepos, sparse checkout, scoped CLAUDE.md |
 
 ## Custom Agents
 
-This plugin provides custom agents in `agents/`:
+This plugin provides custom agents in `agents/` for both platforms:
 
-- **implementer** — focused single-task implementation with TDD and self-review
-- **spec-reviewer** — skeptical spec compliance verification (read-only)
-- **code-quality-reviewer** — code quality, test coverage, architecture review (read-only)
+**Claude Code** (`.md` with YAML frontmatter):
+
+| Agent | Tools | Description |
+|-------|-------|-------------|
+| `implementer` | Read, Write, Edit, Bash, Grep, Glob | Single-task TDD implementation with self-review |
+| `spec-reviewer` | Read, Grep, Glob | Skeptical spec compliance verification |
+| `code-quality-reviewer` | Read, Grep, Glob | Code quality, test coverage, architecture review |
+
+**Codex** (`.toml` with sandbox modes):
+
+| Agent | Sandbox | Description |
+|-------|---------|-------------|
+| `implementer` | workspace-write | Single-task TDD implementation with self-review |
+| `spec-reviewer` | read-only | Skeptical spec compliance verification |
+| `code-quality-reviewer` | read-only | Code quality, test coverage, architecture review |
+
+## Saved Workflows
+
+Reusable workflow scripts in `workflows/`:
+
+| Workflow | Description |
+|----------|-------------|
+| `deep-review` | Multi-dimensional code review (correctness, security, perf, tests) with adversarial verification |
+| `sweep-and-fix` | Find and fix patterns across many files in parallel |
 
 ## Model Routing
 
-If `docs/superpowers/model-routing.json` exists, tasks are routed to the appropriate model tier. See `references/codex-tools.md` for configuration.
+If `docs/superpowers/model-routing.json` exists, tasks are routed to the appropriate model tier. The `PreToolUse` hook (Claude Code) and `SubagentStart` hook (Codex) enforce correct models on every dispatch.
+
+## Hooks
+
+| Hook | Event | Purpose |
+|------|-------|---------|
+| `session-start` | SessionStart | Injects using-superpowers skill at session start |
+| `pre-agent-model-routing` | PreToolUse, SubagentStart | Enforces model tier routing on agent dispatch |
+| `stop` | Stop | Quality gate — warns about uncommitted changes and unfinished tasks |
+
+## CLI Tools
+
+Helper scripts in `bin/` (added to PATH when plugin is active):
+
+| Tool | Usage |
+|------|-------|
+| `sp-routing` | Show, validate, or query model routing config |
+| `sp-worktree` | Create, list, or clean up git worktrees |
 
 ## Tool Mapping
 

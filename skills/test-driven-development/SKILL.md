@@ -1,6 +1,9 @@
 ---
 name: test-driven-development
 description: Use when implementing any feature or bugfix, before writing implementation code
+context: fork
+effort: medium
+allowed-tools: Bash, Read, Write, Edit, Grep, Glob
 ---
 
 # Test-Driven Development (TDD)

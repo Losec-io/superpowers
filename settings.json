@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Read",
+      "Glob",
+      "Grep",
+      "Skill"
+    ]
+  },
+  "env": {
+    "SUPERPOWERS_ROUTING_GUARD": "1"
+  }
+}

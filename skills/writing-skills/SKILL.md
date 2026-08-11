@@ -1,6 +1,9 @@
 ---
 name: writing-skills
 description: Use when creating new skills, editing existing skills, or verifying skills work before deployment
+context: fork
+effort: medium
+allowed-tools: Read, Write, Edit, Grep, Glob, Bash
 ---
 
 # Writing Skills

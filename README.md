@@ -88,17 +88,59 @@ All default to `inherit` (session model). Customize per platform to save tokens:
 
 Tasks are tagged with `modelTier` during plan writing. A `PreToolUse` hook (Claude Code) and `SubagentStart` hook (Codex) enforce the correct model on every subagent dispatch. Disable with `SUPERPOWERS_ROUTING_GUARD=0`.
 
-### Codex Native Agents
+### Native Agent Definitions
 
-Custom agent TOML definitions in `agents/` for Codex's native subagent system:
+Custom agent definitions in `agents/` for both platforms:
 
-| Agent | Role | Sandbox |
-|-------|------|---------|
-| `implementer` | Single-task TDD implementation with self-review | `workspace-write` |
-| `spec-reviewer` | Skeptical spec compliance verification | `read-only` |
-| `code-quality-reviewer` | Code quality, tests, architecture review | `read-only` |
+| Agent | Claude Code (`.md`) | Codex (`.toml`) |
+|-------|---------------------|-----------------|
+| `implementer` | Read/Write/Edit/Bash/Grep/Glob | workspace-write sandbox |
+| `spec-reviewer` | Read/Grep/Glob (read-only) | read-only sandbox |
+| `code-quality-reviewer` | Read/Grep/Glob (read-only) | read-only sandbox |
 
-Use with `spawn_agent(agent_type="implementer", ...)` in Codex CLI/App. The `SubagentStart` hook enforces model routing automatically.
+**Claude Code:** Agents use `.md` files with YAML frontmatter (`name`, `description`, `tools`, `model`) and system prompt body.
+
+**Codex:** Agents use `.toml` files with `sandbox_mode` and `developer_instructions`. Use with `spawn_agent(agent_type="implementer", ...)`.
+
+### Saved Workflows
+
+Reusable workflow scripts in `workflows/`:
+
+- **deep-review** — Multi-dimensional code review (correctness, security, performance, test coverage) with adversarial verification of each finding
+- **sweep-and-fix** — Find and apply fixes across many files in parallel with worktree isolation
+
+### Skill Frontmatter
+
+All skills now use extended frontmatter for better platform control:
+
+```yaml
+---
+name: subagent-driven-development
+description: ...
+context: fork
+model: inherit
+effort: high
+allowed-tools: Agent, Bash, Read, Grep, Glob, Edit, Write
+---
+```
+
+### Large Codebase Support
+
+New `large-codebase-support` skill with guidance for:
+- `claudeMdExcludes` — silence CLAUDE.md instructions from other subsystems
+- `worktree.sparsePaths` — sparse checkout for fast worktrees
+- Per-directory skills with `paths` scoping
+- Subsystem-scoped plans and parallel worktrees
+
+### Stop Hook (Quality Gate)
+
+A `Stop` hook checks for uncommitted changes and unfinished plan tasks before session ends. Disable with `SUPERPOWERS_STOP_GATE=0`.
+
+### CLI Tools
+
+Helper scripts in `bin/` added to PATH:
+- `sp-routing` — show, validate, or query model routing config
+- `sp-worktree` — create, list, or clean up git worktrees
 
 ### Cross-Session Messaging
 
@@ -127,6 +169,9 @@ All SDD prompt templates work on both Claude Code (`Task` tool) and Codex (`spaw
 - **using-git-worktrees** — Parallel development branches
 - **finishing-a-development-branch** — Merge/PR decision workflow
 - **subagent-driven-development** — Fast iteration with two-stage review
+
+**Scale**
+- **large-codebase-support** — Monorepo optimization (sparse checkout, scoped CLAUDE.md, per-directory skills)
 
 **Meta**
 - **writing-skills** — Create new skills following best practices

@@ -1,6 +1,9 @@
 ---
 name: systematic-debugging
 description: Use when encountering any bug, test failure, or unexpected behavior, before proposing fixes
+context: fork
+effort: high
+allowed-tools: Bash, Read, Grep, Glob, Edit
 ---
 
 # Systematic Debugging

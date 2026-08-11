@@ -1,5 +1,68 @@
 # Superpowers Release Notes
 
+## v5.1.3 (2026-08-11) — Claude Code Native Features
+
+### Claude Code Agent Definitions
+
+Added `.md` agent definitions alongside existing `.toml` files for Codex:
+
+- **`agents/implementer.md`** — TDD implementation with self-review (Read/Write/Edit/Bash/Grep/Glob)
+- **`agents/spec-reviewer.md`** — Skeptical spec compliance verification (Read/Grep/Glob)
+- **`agents/code-quality-reviewer.md`** — Code quality and architecture review (Read/Grep/Glob)
+
+Claude Code uses YAML frontmatter (`name`, `description`, `tools`, `model`) + system prompt body. Codex uses `.toml` with `sandbox_mode` and `developer_instructions`.
+
+### Skill Frontmatter Upgrades
+
+All skills now use extended frontmatter for better platform control:
+
+- **`context: fork`** — marks fork-specific skills
+- **`model`** / **`effort`** — recommended model tier and reasoning effort
+- **`allowed-tools`** — restricts which tools the skill should use
+- **`paths`** — scopes skill activation to matching file globs (e.g., `writing-plans` scoped to `docs/superpowers/plans/**`)
+
+### Dynamic Context Injection
+
+SDD skill now uses `!`command`` syntax to inject live model-routing.json content at skill load time, eliminating the need to separately read the config file.
+
+### Saved Workflows
+
+New `workflows/` directory with reusable workflow scripts:
+
+- **`deep-review.js`** — Multi-dimensional review (correctness, security, performance, test coverage) with adversarial verification of each finding
+- **`sweep-and-fix.js`** — Find and fix patterns across many files in parallel with worktree isolation
+
+### Plugin Settings
+
+Added `settings.json` with default permissions (auto-allow Read/Glob/Grep/Skill) and environment variables (`SUPERPOWERS_ROUTING_GUARD=1`).
+
+### CLI Tools
+
+New `bin/` directory with helper scripts added to PATH:
+
+- **`sp-routing`** — Show, validate, or query model routing config (`sp-routing tier mechanical`)
+- **`sp-worktree`** — Create, list, or clean up git worktrees
+
+### Large Codebase Support
+
+New `large-codebase-support` skill with guidance for:
+
+- `claudeMdExcludes` — silence CLAUDE.md from irrelevant subsystems
+- `worktree.sparsePaths` — sparse checkout for fast agent worktrees
+- Per-directory skills with `paths` frontmatter scoping
+- Subsystem-scoped plans and parallel worktrees
+
+### Stop Hook (Quality Gate)
+
+Added `Stop` hook to `hooks.json` — checks for uncommitted changes and unfinished plan tasks before session ends. Disable with `SUPERPOWERS_STOP_GATE=0`.
+
+### Plugin Manifest Updates
+
+- `.claude-plugin/plugin.json` — added `hooks`, `settings`, and `bin` fields
+- `.codex-plugin/plugin.json` — added `bin` field
+
+---
+
 ## v5.1.2 (2026-08-11) — Losec-io Fork
 
 First release of the [Losec-io/superpowers](https://github.com/Losec-io/superpowers) fork, based on v5.1.0. This fork prioritizes token efficiency and lean workflows, supporting **Claude Code** and **Codex** only.

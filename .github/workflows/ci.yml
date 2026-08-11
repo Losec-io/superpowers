@@ -47,13 +47,51 @@ jobs:
       - name: Validate hooks
         run: |
           jq empty hooks/hooks.json
-          for hook in hooks/session-start hooks/pre-agent-model-routing; do
+          for hook in hooks/session-start hooks/pre-agent-model-routing hooks/stop; do
             if [ ! -f "$hook" ]; then
               echo "::error::Missing hook: $hook"
               exit 1
             fi
             head -1 "$hook" | grep -q '^#!/' || echo "::warning file=$hook::Missing shebang"
           done
+
+      - name: Validate agent MD files
+        run: |
+          FAIL=0
+          for agent in agents/*.md; do
+            [ ! -f "$agent" ] && continue
+            echo "Checking $agent..."
+            if ! head -1 "$agent" | grep -q '^---$'; then
+              echo "::error file=$agent::Missing YAML frontmatter"
+              FAIL=1
+            fi
+            if ! grep -q '^name:' "$agent"; then
+              echo "::error file=$agent::Missing required 'name' field in frontmatter"
+              FAIL=1
+            fi
+            if ! grep -q '^description:' "$agent"; then
+              echo "::error file=$agent::Missing required 'description' field in frontmatter"
+              FAIL=1
+            fi
+            if ! grep -q '^tools:' "$agent"; then
+              echo "::error file=$agent::Missing required 'tools' field in frontmatter"
+              FAIL=1
+            fi
+          done
+          exit $FAIL
+
+      - name: Validate workflow scripts
+        run: |
+          FAIL=0
+          for wf in workflows/*.js; do
+            [ ! -f "$wf" ] && continue
+            echo "Checking $wf..."
+            if ! grep -q 'export const meta' "$wf"; then
+              echo "::error file=$wf::Missing required 'export const meta' block"
+              FAIL=1
+            fi
+          done
+          exit $FAIL
 
       - name: Validate agent TOML files
         run: |
