@@ -1,0 +1,91 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate JSON files
+        run: |
+          for f in package.json .claude-plugin/plugin.json .codex-plugin/plugin.json docs/superpowers/model-routing.json .version-bump.json; do
+            echo "Checking $f..."
+            jq empty "$f"
+          done
+
+      - name: Check version sync
+        run: |
+          PKG_VER=$(jq -r .version package.json)
+          CC_VER=$(jq -r .version .claude-plugin/plugin.json)
+          CODEX_VER=$(jq -r .version .codex-plugin/plugin.json)
+          echo "package.json: $PKG_VER"
+          echo "claude-plugin: $CC_VER"
+          echo "codex-plugin: $CODEX_VER"
+          if [ "$PKG_VER" != "$CC_VER" ] || [ "$PKG_VER" != "$CODEX_VER" ]; then
+            echo "::error::Version drift detected!"
+            exit 1
+          fi
+          echo "All versions in sync: $PKG_VER"
+
+      - name: Validate skill frontmatter
+        run: |
+          FAIL=0
+          for skill in skills/*/SKILL.md; do
+            if ! head -1 "$skill" | grep -q '^---$'; then
+              echo "::error file=$skill::Missing YAML frontmatter"
+              FAIL=1
+            fi
+          done
+          exit $FAIL
+
+      - name: Validate hooks
+        run: |
+          jq empty hooks/hooks.json
+          for hook in hooks/session-start hooks/pre-agent-model-routing; do
+            if [ ! -f "$hook" ]; then
+              echo "::error::Missing hook: $hook"
+              exit 1
+            fi
+            head -1 "$hook" | grep -q '^#!/' || echo "::warning file=$hook::Missing shebang"
+          done
+
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install test dependencies
+        working-directory: tests/brainstorm-server
+        run: npm ci
+
+      - name: Run brainstorm-server tests
+        working-directory: tests/brainstorm-server
+        run: npm test
+
+      - name: Run shell tests
+        run: |
+          for f in tests/codex-plugin-sync/*.sh; do
+            echo "Running $f..."
+            bash "$f" || true
+          done
+
+  lint-hooks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: ShellCheck hooks
+        uses: ludeeus/action-shellcheck@2.0.0
+        with:
+          scandir: hooks
+          ignore_paths: run-hook.cmd
