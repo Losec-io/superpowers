@@ -1,6 +1,6 @@
 # Superpowers Release Notes
 
-## v5.1.1 (2026-08-11) — Losec-io Fork
+## v5.1.2 (2026-08-11) — Losec-io Fork
 
 First release of the [Losec-io/superpowers](https://github.com/Losec-io/superpowers) fork, based on v5.1.0. This fork prioritizes token efficiency and lean workflows, supporting **Claude Code** and **Codex** only.
 
