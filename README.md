@@ -36,16 +36,13 @@ Other platforms (Gemini CLI, Cursor, Copilot CLI, etc.) are not maintained in th
 /plugin marketplace add https://github.com/Losec-io/superpowers.git
 ```
 
-### Codex CLI
+### Codex CLI / App
 
 ```bash
-/plugins
-# Search for "superpowers" and install
+codex plugin marketplace add https://github.com/Losec-io/superpowers.git
 ```
 
-### Codex App
-
-In the Codex app, click on Plugins in the sidebar → find `Superpowers` → click `+` to install.
+Then open `/plugins`, find `superpowers`, and install. Start a new session to activate.
 
 ## The Workflow
 
