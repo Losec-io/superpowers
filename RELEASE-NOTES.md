@@ -1,5 +1,55 @@
 # Superpowers Release Notes
 
+## v5.1.1 (2026-08-11) — Losec-io Fork
+
+First release of the [Losec-io/superpowers](https://github.com/Losec-io/superpowers) fork, based on v5.1.0. This fork prioritizes token efficiency and lean workflows, supporting **Claude Code** and **Codex** only.
+
+### Model Routing (Token Optimization)
+
+Opt-in per-task model tier routing inspired by [pcvelz/superpowers](https://github.com/pcvelz/superpowers).
+
+- **`docs/superpowers/model-routing.json`** — Config file with three tiers: `mechanical`, `standard`, `frontier`. All default to `inherit` (session model) for Codex compatibility. Claude Code users can set mechanical/standard to `sonnet` to save tokens.
+- **`hooks/pre-agent-model-routing`** — PreToolUse hook that intercepts Agent dispatches and validates the model matches the task's tier. Fail-open design (missing config/transcript/tier → allow). Disable with `SUPERPOWERS_ROUTING_GUARD=0`.
+- **Plan tagging** — `writing-plans` skill updated to tag tasks with `modelTier` metadata (`mechanical`/`standard`/`frontier`).
+- **SDD integration** — `subagent-driven-development` skill updated with model selection guidance and tier escalation (mechanical → standard → frontier).
+
+### Cross-Session Messaging
+
+Skills now leverage Claude Code's `SendMessage`/`ListAgents` for parallel worktree coordination.
+
+- **`dispatching-parallel-agents`** — Added Cross-Session Coordination section with examples for notifying other sessions of breaking changes, completed tasks, or status updates.
+- **`subagent-driven-development`** — Added integration guidance for cross-session messaging in long-running plans.
+
+### Platform-Neutral Prompts
+
+All SDD prompt templates work on both Claude Code (`Task` tool) and Codex (`spawn_agent`).
+
+- **`implementer-prompt.md`** and **`spec-reviewer-prompt.md`** — Dispatch headers now reference both platforms. Added model parameter line for routing.
+- **`using-superpowers`** — Codex added to "How to Access Skills" section. Platform Adaptation trimmed to Codex + Copilot CLI only.
+
+### Platform Cleanup
+
+Removed all unsupported platform files to keep the fork lean:
+
+- **Deleted**: `.cursor-plugin/`, `.opencode/`, `GEMINI.md`, `gemini-extension.json`, `skills/using-superpowers/references/gemini-tools.md`, `docs/README.opencode.md`
+- **Removed** Gemini CLI references from skills and hooks
+- **`.version-bump.json`** — Trimmed to track only `package.json`, `.claude-plugin/plugin.json`, `.codex-plugin/plugin.json`
+
+### CI/CD
+
+- **`.github/workflows/ci.yml`** — Validates JSON files, version sync across manifests, skill frontmatter, and hooks. Runs brainstorm-server Node tests and shell tests. ShellCheck lints all hooks.
+- **`.github/workflows/release.yml`** — Triggered on `v*` tags. Validates tag matches `package.json` version, builds release archive, creates GitHub Release via `softprops/action-gh-release@v2`.
+
+### Documentation
+
+- **README.md** — Complete rewrite explaining fork rationale (v5.1.0 vs v6.2.0 comparison), supported platforms, simplified installation, and what's new in this fork.
+
+### Plugin Metadata
+
+- `.claude-plugin/plugin.json` and `.codex-plugin/plugin.json` updated: author `Losec-io`, URLs point to `Losec-io/superpowers`, version `5.1.1`.
+
+---
+
 ## v5.1.0 (2026-04-30)
 
 ### Removals
