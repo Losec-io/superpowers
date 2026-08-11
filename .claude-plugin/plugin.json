@@ -9,7 +9,6 @@
   "homepage": "https://github.com/Losec-io/superpowers",
   "repository": "https://github.com/Losec-io/superpowers",
   "license": "MIT",
-  "hooks": "./hooks/hooks.json",
   "bin": "./bin",
   "keywords": [
     "skills",
