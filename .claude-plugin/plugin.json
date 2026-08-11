@@ -1,13 +1,13 @@
 {
   "name": "superpowers",
-  "description": "Core skills library for Claude Code: TDD, debugging, collaboration patterns, and proven techniques",
-  "version": "5.1.0",
+  "description": "Agentic skills framework: planning, TDD, debugging, model routing, and collaboration workflows for Claude Code and Codex",
+  "version": "5.1.1",
   "author": {
-    "name": "Jesse Vincent",
-    "email": "jesse@fsck.com"
+    "name": "Losec-io",
+    "url": "https://github.com/Losec-io"
   },
-  "homepage": "https://github.com/obra/superpowers",
-  "repository": "https://github.com/obra/superpowers",
+  "homepage": "https://github.com/Losec-io/superpowers",
+  "repository": "https://github.com/Losec-io/superpowers",
   "license": "MIT",
   "keywords": [
     "skills",
@@ -15,6 +15,7 @@
     "debugging",
     "collaboration",
     "best-practices",
-    "workflows"
+    "workflows",
+    "model-routing"
   ]
 }
