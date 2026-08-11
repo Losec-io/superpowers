@@ -1,241 +1,134 @@
-# Superpowers
+# Superpowers (Losec-io Fork)
 
-Superpowers is a complete software development methodology for your coding agents, built on top of a set of composable skills and some initial instructions that make sure your agent uses them.
+A lean fork of [obra/superpowers](https://github.com/obra/superpowers), pinned at **v5.1.0** and extended with token-efficient features. Supports **Claude Code** and **Codex** only.
 
-## Quickstart
+## Why This Fork?
 
-Give your agent Superpowers: [Claude Code](#claude-code), [Codex CLI](#codex-cli), [Codex App](#codex-app), [Factory Droid](#factory-droid), [Gemini CLI](#gemini-cli), [OpenCode](#opencode), [Cursor](#cursor), [GitHub Copilot CLI](#github-copilot-cli).
+The upstream Superpowers v6.0+ introduced significant overhead that makes it impractical for real-world use:
 
-## How it works
+- **3-6x more tokens per task** — 5-round fix loops, unified heavy reviewer (~8KB prompt), plan-scoped workspaces, and rationalization tables
+- **Much slower execution** — pre-flight plan scans, file-based handoffs, progress ledgers, scoped re-reviews after every fix round
+- **SDD SKILL.md bloat** — grew from 279 lines (v5.1.0) to ~700 lines (v6.2.0), with supporting files ballooning from 8KB to 28KB
 
-It starts from the moment you fire up your coding agent. As soon as it sees that you're building something, it *doesn't* just jump into trying to write code. Instead, it steps back and asks you what you're really trying to do. 
+This fork keeps v5.1.0's lean workflow and adds targeted improvements inspired by [pcvelz/superpowers](https://github.com/pcvelz/superpowers):
 
-Once it's teased a spec out of the conversation, it shows it to you in chunks short enough to actually read and digest. 
+| | v5.1.0 (this fork) | v6.2.0 (upstream) |
+|---|---|---|
+| **Workflow** | plan → dispatch → implement → 2 quick reviews → done | plan → pre-flight → dispatch → implement → file handoff → unified review → fix loop (1-5 rounds) → re-review → final branch review → done |
+| **Reviewers** | 2 lightweight (spec 61 lines + quality 25 lines) | 1 heavy unified (7,816 bytes) + whole-branch final |
+| **Fix loop** | None | 5 rounds + adjudication |
+| **Token cost** | Baseline | 3-6x baseline |
 
-After you've signed off on the design, your agent puts together an implementation plan that's clear enough for an enthusiastic junior engineer with poor taste, no judgement, no project context, and an aversion to testing to follow. It emphasizes true red/green TDD, YAGNI (You Aren't Gonna Need It), and DRY. 
+## Supported Platforms
 
-Next up, once you say "go", it launches a *subagent-driven-development* process, having agents work through each engineering task, inspecting and reviewing their work, and continuing forward. It's not uncommon for Claude to be able to work autonomously for a couple hours at a time without deviating from the plan you put together.
+| Platform | Status |
+|----------|--------|
+| **Claude Code** | Fully supported |
+| **Codex CLI / App** | Fully supported |
 
-There's a bunch more to it, but that's the core of the system. And because the skills trigger automatically, you don't need to do anything special. Your coding agent just has Superpowers.
-
-
+Other platforms (Gemini CLI, Cursor, Copilot CLI, etc.) are not maintained in this fork.
 
 ## Installation
 
-Installation differs by harness. If you use more than one, install Superpowers separately for each one.
-
 ### Claude Code
 
-Superpowers is available via the [official Claude plugin marketplace](https://claude.com/plugins/superpowers)
-
-#### Official Marketplace
-
-- Install the plugin from Anthropic's official marketplace:
-
-  ```bash
-  /plugin install superpowers@claude-plugins-official
-  ```
-
-#### Superpowers Marketplace
-
-The Superpowers marketplace provides Superpowers and some other related plugins for Claude Code.
-
-- Register the marketplace:
-
-  ```bash
-  /plugin marketplace add Losec-io/superpowers-marketplace
-  ```
-
-- Install the plugin from this marketplace:
-
-  ```bash
-  /plugin install superpowers@superpowers-marketplace
-  ```
+```bash
+/plugin install --source url https://github.com/Losec-io/superpowers.git
+```
 
 ### Codex CLI
 
-Superpowers is available via the [official Codex plugin marketplace](https://github.com/openai/plugins).
-
-- Open the plugin search interface:
-
-  ```bash
-  /plugins
-  ```
-
-- Search for Superpowers:
-
-  ```bash
-  superpowers
-  ```
-
-- Select `Install Plugin`.
+```bash
+/plugins
+# Search for "superpowers" and install
+```
 
 ### Codex App
 
-Superpowers is available via the [official Codex plugin marketplace](https://github.com/openai/plugins).
+In the Codex app, click on Plugins in the sidebar → find `Superpowers` → click `+` to install.
 
-- In the Codex app, click on Plugins in the sidebar.
-- You should see `Superpowers` in the Coding section.
-- Click the `+` next to Superpowers and follow the prompts.
+## The Workflow
 
-### Factory Droid
+```
+plan → dispatch → implement → 2 quick reviews → done
+```
 
-- Register the marketplace:
+1. **brainstorming** — Refines ideas through questions, explores alternatives, saves design document
+2. **using-git-worktrees** — Creates isolated workspace on new branch, verifies clean test baseline
+3. **writing-plans** — Breaks work into bite-sized tasks (2-5 min each) with exact file paths, complete code, and model tier tags
+4. **subagent-driven-development** — Dispatches fresh subagent per task with two-stage review (spec compliance, then code quality)
+5. **test-driven-development** — Enforces RED-GREEN-REFACTOR cycle
+6. **requesting-code-review** — Reviews against plan, reports issues by severity
+7. **finishing-a-development-branch** — Verifies tests, presents merge/PR/keep options
 
-  ```bash
-  droid plugin marketplace add https://github.com/Losec-io/superpowers
-  ```
+## What's New in This Fork
 
-- Install the plugin:
+### Model Routing (Token Optimization)
 
-  ```bash
-  droid plugin install superpowers@superpowers
-  ```
-
-### Gemini CLI
-
-- Install the extension:
-
-  ```bash
-  gemini extensions install https://github.com/Losec-io/superpowers
-  ```
-
-- Update later:
-
-  ```bash
-  gemini extensions update superpowers
-  ```
-
-### OpenCode
-
-OpenCode uses its own plugin install; install Superpowers separately even if you
-already use it in another harness.
-
-- Tell OpenCode:
-
-  ```
-  Fetch and follow instructions from https://raw.githubusercontent.com/Losec-io/superpowers/refs/heads/main/.opencode/INSTALL.md
-  ```
-
-- Detailed docs: [docs/README.opencode.md](docs/README.opencode.md)
-
-### Cursor
-
-- In Cursor Agent chat, install from marketplace:
-
-  ```text
-  /add-plugin superpowers
-  ```
-
-- Or search for "superpowers" in the plugin marketplace.
-
-### GitHub Copilot CLI
-
-- Register the marketplace:
-
-  ```bash
-  copilot plugin marketplace add Losec-io/superpowers-marketplace
-  ```
-
-- Install the plugin:
-
-  ```bash
-  copilot plugin install superpowers@superpowers-marketplace
-  ```
-
-## The Basic Workflow
-
-1. **brainstorming** - Activates before writing code. Refines rough ideas through questions, explores alternatives, presents design in sections for validation. Saves design document.
-
-2. **using-git-worktrees** - Activates after design approval. Creates isolated workspace on new branch, runs project setup, verifies clean test baseline.
-
-3. **writing-plans** - Activates with approved design. Breaks work into bite-sized tasks (2-5 minutes each). Every task has exact file paths, complete code, verification steps.
-
-4. **subagent-driven-development** or **executing-plans** - Activates with plan. Dispatches fresh subagent per task with two-stage review (spec compliance, then code quality), or executes in batches with human checkpoints.
-
-5. **test-driven-development** - Activates during implementation. Enforces RED-GREEN-REFACTOR: write failing test, watch it fail, write minimal code, watch it pass, commit. Deletes code written before tests.
-
-6. **requesting-code-review** - Activates between tasks. Reviews against plan, reports issues by severity. Critical issues block progress.
-
-7. **finishing-a-development-branch** - Activates when tasks complete. Verifies tests, presents options (merge/PR/keep/discard), cleans up worktree.
-
-**The agent checks for relevant skills before any task.** Mandatory workflows, not suggestions.
-
-## What's Inside
-
-### Skills Library
-
-**Testing**
-- **test-driven-development** - RED-GREEN-REFACTOR cycle (includes testing anti-patterns reference)
-
-**Debugging**
-- **systematic-debugging** - 4-phase root cause process (includes root-cause-tracing, defense-in-depth, condition-based-waiting techniques)
-- **verification-before-completion** - Ensure it's actually fixed
-
-**Collaboration** 
-- **brainstorming** - Socratic design refinement
-- **writing-plans** - Detailed implementation plans
-- **executing-plans** - Batch execution with checkpoints
-- **dispatching-parallel-agents** - Concurrent subagent workflows
-- **requesting-code-review** - Pre-review checklist
-- **receiving-code-review** - Responding to feedback
-- **using-git-worktrees** - Parallel development branches
-- **finishing-a-development-branch** - Merge/PR decision workflow
-- **subagent-driven-development** - Fast iteration with two-stage review (spec compliance, then code quality)
-
-**Meta**
-- **writing-skills** - Create new skills following best practices (includes testing methodology)
-- **using-superpowers** - Introduction to the skills system
-
-## Model Routing (Token Optimization)
-
-Opt-in per-task model tier routing to reduce token costs. Create `docs/superpowers/model-routing.json`:
+Opt-in per-task model tier routing. Create `docs/superpowers/model-routing.json`:
 
 ```json
 {"mechanical": "inherit", "standard": "inherit", "frontier": "inherit"}
 ```
 
 - **mechanical** — simple tasks (1-2 files, clear spec)
-- **standard** — integration tasks
-- **frontier** — architecture/design
+- **standard** — integration tasks (multi-file coordination)
+- **frontier** — architecture/design judgment
 
-All default to `inherit` (session model). Customize per tier when needed (e.g., `"mechanical": "sonnet"` for Claude Code).
+All default to `inherit` (session model). For Claude Code, customize to save tokens:
+```json
+{"mechanical": "sonnet", "standard": "sonnet", "frontier": "inherit"}
+```
 
 Tasks are tagged with `modelTier` during plan writing. A `PreToolUse` hook enforces the correct model on every Agent dispatch. Disable with `SUPERPOWERS_ROUTING_GUARD=0`.
 
-## Cross-Session Messaging
+### Cross-Session Messaging
 
-Skills are aware of Claude Code's cross-session messaging (`SendMessage`/`ListAgents`). When running parallel worktrees or long-running plans, sessions can notify each other of breaking changes, completed tasks, or status updates without you copy-pasting between terminals.
+Skills are aware of Claude Code's cross-session messaging (`SendMessage`/`ListAgents`). When running parallel worktrees or long-running plans, sessions can notify each other of breaking changes, completed tasks, or status updates.
+
+### Platform-Neutral Prompts
+
+All SDD prompt templates work on both Claude Code (`Task` tool) and Codex (`spawn_agent`). Tool references use platform-neutral language with explicit mappings.
+
+## Skills Library
+
+**Testing**
+- **test-driven-development** — RED-GREEN-REFACTOR cycle (includes testing anti-patterns reference)
+
+**Debugging**
+- **systematic-debugging** — 4-phase root cause process
+- **verification-before-completion** — Ensure it's actually fixed
+
+**Collaboration**
+- **brainstorming** — Socratic design refinement
+- **writing-plans** — Detailed implementation plans with model tier tagging
+- **executing-plans** — Batch execution with checkpoints
+- **dispatching-parallel-agents** — Concurrent subagent workflows with cross-session coordination
+- **requesting-code-review** — Pre-review checklist
+- **receiving-code-review** — Responding to feedback
+- **using-git-worktrees** — Parallel development branches
+- **finishing-a-development-branch** — Merge/PR decision workflow
+- **subagent-driven-development** — Fast iteration with two-stage review
+
+**Meta**
+- **writing-skills** — Create new skills following best practices
+- **using-superpowers** — Introduction to the skills system
 
 ## Philosophy
 
-- **Test-Driven Development** - Write tests first, always
-- **Systematic over ad-hoc** - Process over guessing
-- **Complexity reduction** - Simplicity as primary goal
-- **Evidence over claims** - Verify before declaring success
-
-Read [the original release announcement](https://blog.fsck.com/2025/10/09/superpowers/).
-
-## Contributing
-
-The general contribution process for Superpowers is below. Keep in mind that we don't generally accept contributions of new skills and that any updates to skills must work across all of the coding agents we support.
-
-1. Fork the repository
-2. Switch to the 'dev' branch
-3. Create a branch for your work
-4. Follow the `writing-skills` skill for creating and testing new and modified skills
-5. Submit a PR, being sure to fill in the pull request template.
-
-See `skills/writing-skills/SKILL.md` for the complete guide.
-
-## Updating
-
-Superpowers updates are somewhat coding-agent dependent, but are often automatic.
+- **Token efficiency** — Use the least tokens that produce correct results
+- **Lean workflow** — No unnecessary review rounds, fix loops, or overhead
+- **Test-Driven Development** — Write tests first, always
+- **Systematic over ad-hoc** — Process over guessing
+- **Evidence over claims** — Verify before declaring success
 
 ## License
 
-MIT License - see LICENSE file for details
+MIT License — see LICENSE file for details.
 
-## Community
+Based on [obra/superpowers](https://github.com/obra/superpowers) by Jesse Vincent.
+
+## Links
 
 - **Issues**: https://github.com/Losec-io/superpowers/issues
+- **Upstream**: https://github.com/obra/superpowers
