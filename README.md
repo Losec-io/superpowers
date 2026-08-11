@@ -201,6 +201,10 @@ Opt-in per-task model tier routing to reduce token costs. Create `docs/superpowe
 
 Tasks are tagged with `modelTier` during plan writing. A `PreToolUse` hook enforces the correct model on every Agent dispatch. Disable with `SUPERPOWERS_ROUTING_GUARD=0`.
 
+## Cross-Session Messaging
+
+Skills are aware of Claude Code's cross-session messaging (`SendMessage`/`ListAgents`). When running parallel worktrees or long-running plans, sessions can notify each other of breaking changes, completed tasks, or status updates without you copy-pasting between terminals.
+
 ## Philosophy
 
 - **Test-Driven Development** - Write tests first, always

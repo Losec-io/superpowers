@@ -157,6 +157,35 @@ Agent 3 → Fix tool-approval-race-conditions.test.ts
 
 **Time saved:** 3 problems solved in parallel vs sequentially
 
+## Cross-Session Coordination
+
+When tasks are large enough to warrant separate Claude Code sessions (e.g., parallel worktrees, long-running migrations), use cross-session messaging to coordinate:
+
+**Notify other sessions of breaking changes:**
+```
+Tell the session working on the payments API that I renamed the users table to accounts
+```
+
+**Get status from long-running work:**
+```
+Ask the migration session whether it finished the schema changes
+```
+
+**Coordinate parallel worktrees:**
+```
+Let the other session know that the auth refactor landed on main so they can rebase
+```
+
+**When to use cross-session vs subagents:**
+- Subagents (Task tool): short-lived, same session, controller manages lifecycle
+- Cross-session (SendMessage): independent sessions, each with their own human, long-running
+
+**Limitations:**
+- Plain text only — no structured data, no files
+- Not available on native Windows — use WSL 2
+- Messages are delivered between tool calls, never interrupting a running tool
+- Each session keeps its own permission boundaries
+
 ## Key Benefits
 
 1. **Parallelization** - Multiple investigations happen simultaneously

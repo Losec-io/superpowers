@@ -282,5 +282,9 @@ Done!
 **Subagents should use:**
 - **superpowers:test-driven-development** - Subagents follow TDD for each task
 
+**Cross-session coordination:**
+- When running SDD in one session while another session works on the same repo (different worktree), use `SendMessage` to notify the other session of breaking changes or completed tasks
+- When a long-running SDD plan finishes, message the session that requested it with the summary
+
 **Alternative workflow:**
 - **superpowers:executing-plans** - Use for parallel session instead of same-session execution
