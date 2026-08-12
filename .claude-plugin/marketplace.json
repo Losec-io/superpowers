@@ -9,7 +9,7 @@
     {
       "name": "superpowers",
       "description": "Agentic skills framework: planning, TDD, debugging, model routing, and collaboration workflows for Claude Code and Codex",
-      "version": "5.1.3",
+      "version": "5.1.4",
       "source": "./",
       "author": {
         "name": "Losec-io",
