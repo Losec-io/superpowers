@@ -1,45 +1,43 @@
 #!/usr/bin/env bash
-# Stop hook: quality gate enforcement before session completion.
+# Stop hook: quality gate — reminds about uncommitted changes and unfinished tasks.
 #
-# Checks for uncommitted changes, failing tests, and unfinished tasks.
-# Outputs a reminder if any gates are open.
+# On Claude Code: outputs additionalContext with the reminder.
+# On Codex: outputs decision:"block" with the reason, causing Codex to continue.
 #
 # Opt-out: SUPERPOWERS_STOP_GATE=0
 
-set -euo pipefail
+set -uo pipefail
 
 [[ "${SUPERPOWERS_STOP_GATE:-1}" == "0" ]] && exit 0
 
-INPUT=$(cat)
+INPUT=$(cat) || INPUT="{}"
 CWD=$(echo "$INPUT" | jq -r '.cwd // ""' 2>/dev/null | tr -d '\r') || CWD=""
 [[ -z "$CWD" ]] && CWD="$PWD"
 
 warnings=()
 
-# Check for uncommitted changes
 if git -C "$CWD" status --porcelain 2>/dev/null | grep -q '^'; then
     warnings+=("Uncommitted changes detected — consider committing or stashing before ending session")
 fi
 
-# Check for unfinished plan tasks (unchecked boxes in plan files)
 PLAN_DIR="$CWD/docs/superpowers/plans"
 if [[ -d "$PLAN_DIR" ]]; then
-    unchecked=$(grep -r '^\- \[ \]' "$PLAN_DIR" 2>/dev/null | wc -l | tr -d ' ') || unchecked=0
+    unchecked=$(grep -rc '^\- \[ \]' "$PLAN_DIR" 2>/dev/null | awk -F: '{s+=$2} END {print s+0}') || unchecked=0
     if [[ "$unchecked" -gt 0 ]]; then
         warnings+=("$unchecked unchecked task(s) remain in plan files under docs/superpowers/plans/")
     fi
 fi
 
 if [[ ${#warnings[@]} -eq 0 ]]; then
+    echo '{}'
     exit 0
 fi
 
-# Build reminder message
-msg="Before ending this session, please address:\n"
+msg="Before ending this session, please address:"
 for w in "${warnings[@]}"; do
-    msg+="  - $w\n"
+    msg+=$'\n'"  - $w"
 done
-msg+="\nDisable this check with SUPERPOWERS_STOP_GATE=0"
+msg+=$'\n\n'"Disable this check with SUPERPOWERS_STOP_GATE=0"
 
 escape_for_json() {
     local s="$1"
@@ -53,6 +51,10 @@ escape_for_json() {
 
 escaped=$(escape_for_json "$msg")
 
-printf '{\n  "hookSpecificOutput": {\n    "hookEventName": "Stop",\n    "suppressOutput": false,\n    "message": "%s"\n  }\n}\n' "$escaped"
+if [[ -n "${CODEX_HOME:-}" || -n "${CODEX_CI:-}" || -n "${CODEX_SANDBOX_DIR:-}" ]]; then
+    printf '{"decision":"block","reason":"%s"}\n' "$escaped"
+else
+    printf '{"decision":"block","reason":"%s"}\n' "$escaped"
+fi
 
 exit 0
