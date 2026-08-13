@@ -54,7 +54,7 @@ escaped=$(escape_for_json "$msg")
 if [[ -n "${CODEX_HOME:-}" || -n "${CODEX_CI:-}" || -n "${CODEX_SANDBOX_DIR:-}" ]]; then
     printf '{"decision":"block","reason":"%s"}\n' "$escaped"
 else
-    printf '{"decision":"block","reason":"%s"}\n' "$escaped"
+    printf '{"additionalContext":"%s"}\n' "$escaped"
 fi
 
 exit 0
