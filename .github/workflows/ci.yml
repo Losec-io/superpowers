@@ -20,7 +20,7 @@ jobs:
           done
 
       - name: Check version sync
-        run: bash scripts/bump-version.sh --check
+        run: node scripts/check-versions.js
 
       - name: Validate skill frontmatter
         run: |
