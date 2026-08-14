@@ -20,18 +20,7 @@ jobs:
           done
 
       - name: Check version sync
-        run: |
-          PKG_VER=$(jq -r .version package.json)
-          CC_VER=$(jq -r .version .claude-plugin/plugin.json)
-          CODEX_VER=$(jq -r .version .codex-plugin/plugin.json)
-          echo "package.json: $PKG_VER"
-          echo "claude-plugin: $CC_VER"
-          echo "codex-plugin: $CODEX_VER"
-          if [ "$PKG_VER" != "$CC_VER" ] || [ "$PKG_VER" != "$CODEX_VER" ]; then
-            echo "::error::Version drift detected!"
-            exit 1
-          fi
-          echo "All versions in sync: $PKG_VER"
+        run: bash scripts/bump-version.sh --check
 
       - name: Validate skill frontmatter
         run: |
